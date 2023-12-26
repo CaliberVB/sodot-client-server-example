@@ -13,7 +13,7 @@ const API_KEY = process.env.API_KEY;
 
 // For this client-server example we use a simple 2-of-2 setting
 const T = 2;
-const N = 2;
+const N = 3;
 
 // Define a port number for the server
 const port = 3000;
@@ -41,13 +41,14 @@ function runServer() {
     app.use(express.json());
 
     // Define the keygen endpoint
-    app.get('/keygen/:userId/:sigAlgo/:keygenId', async (req, res) => {
+    app.get('/keygen/:userId/:sigAlgo/:keygenId/:keygenId2', async (req, res) => {
         try {
             await mutex.runExclusive(async () => {
                 // Parse the parameters
                 const userId = req.params.userId;
                 const sigAlgo = req.params.sigAlgo;
                 const clientKeygenId = req.params.keygenId;
+                const clientKeygenId2 = req.params.keygenId2;
                 const mpcSigner = sigAlgo == 'ecdsa' ? new Ecdsa() : new Ed25519();
 
                 // Check if the userId already exists in the database
@@ -65,7 +66,7 @@ function runServer() {
                 res.status(200).send(`["${roomUuid}","${initKeygenResult.keygenId}"]`);
 
                 // Run keygen
-                const keygenResult = await mpcSigner.keygen(roomUuid, N, T, initKeygenResult, [clientKeygenId]);
+                const keygenResult = await mpcSigner.keygen(roomUuid, N, T, initKeygenResult, [clientKeygenId,clientKeygenId2]);
                 let pubkey = keygenResult.pubkey;
                 if (sigAlgo == 'ecdsa') {
                     // For ecdsa, we serialize the pubkey to make it readable
@@ -107,7 +108,7 @@ function runServer() {
                 }
 
                 // Create a room for signing
-                const roomUuid = await mpcSigner.createRoom(N, API_KEY);
+                const roomUuid = await mpcSigner.createRoom(T, API_KEY);
                 // Return a 200 OK status with the roomUuid
                 res.status(200).send(`${roomUuid}`);
 
@@ -213,7 +214,7 @@ async function runClienServerFlow() {
     await runWebClient();
     console.log('Client-Server flow completed successfully');
     // We exit and stop the server after the client flow is done.
-    exit();
+    // exit();
 }
 
 runClienServerFlow().catch((e) => console.log(e));
